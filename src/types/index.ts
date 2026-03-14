@@ -138,3 +138,121 @@ export interface ApiResponse<T = any> {
     error?: string;
     message?: string;
 }
+
+// ============================================================
+// SIEM LAYER TYPES (Phase 5)
+// ============================================================
+
+export type IOCSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type IOCType = 'ip' | 'domain' | 'hash' | 'cve';
+export type ATTACKTactic = 'Reconnaissance' | 'Initial Access' | 'Execution' | 'Persistence' | 'Privilege Escalation' | 'Defense Evasion' | 'Credential Access' | 'Discovery' | 'Lateral Movement' | 'Collection' | 'Command & Control' | 'Exfiltration' | 'Impact';
+
+export interface UEBAFeature {
+    name: string;
+    baseline: number;
+    current: number;
+    unit: string;
+}
+
+export interface UEBAEntity {
+    deviceId: string;
+    deviceName: string;
+    driftSigma: number;
+    status: 'normal' | 'drift' | 'alert';
+    features: UEBAFeature[];
+    cusumHistory: { day: string; value: number }[];
+}
+
+export interface IOC {
+    id: string;
+    type: IOCType;
+    value: string;
+    source: string;
+    severity: IOCSeverity;
+    hits: number;
+    firstSeen: string;
+    lastSeen: string;
+    active: boolean;
+    linkedDevices: string[];
+    country?: string;
+}
+
+export interface KillChainStage {
+    tactic: ATTACKTactic;
+    technique: string;
+    deviceId: string;
+    timestamp: string;
+    confirmed: boolean;
+}
+
+export interface KillChain {
+    id: string;
+    name: string;
+    severity: 'high' | 'critical';
+    stages: KillChainStage[];
+    devices: string[];
+    startTime: string;
+    duration: string;
+    status: 'active' | 'contained' | 'resolved';
+}
+
+export interface CorrelatedAlert {
+    id: string;
+    layers: string[];
+    deviceId: string;
+    deviceName: string;
+    severity: 'high' | 'critical';
+    message: string;
+    timestamp: string;
+}
+
+export interface SIEMLayerStatus {
+    layer: string;
+    name: string;
+    status: 'live' | 'warning' | 'alert';
+    detail: string;
+    color: string;
+}
+
+// ============================================================
+// COMPLIANCE & SOC TYPES
+// ============================================================
+
+export interface ComplianceControl {
+    id: string;
+    requirement: string;
+    status: 'pass' | 'fail' | 'partial';
+    evidence?: string;
+}
+
+export interface ComplianceFunction {
+    name: string;
+    score: number;
+    color: string;
+    controls: ComplianceControl[];
+}
+
+export interface SOCQueueItem {
+    incidentId: string;
+    deviceId: string;
+    deviceName: string;
+    severity: 'critical' | 'high' | 'medium' | 'low';
+    summary: string;
+    assignedTo: string;
+    timestamp: string;
+    status: 'queued' | 'in_progress' | 'resolved';
+}
+
+export interface PlaybookStep {
+    id: string;
+    label: string;
+    status: 'done' | 'active' | 'pending' | 'failed';
+}
+
+export interface AuditEntry {
+    id: string;
+    analyst: string;
+    action: string;
+    target: string;
+    timestamp: string;
+}

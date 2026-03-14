@@ -359,3 +359,213 @@ export function generateNewAlert(): Alert {
         severity,
     };
 }
+
+// ============================================================
+// SIEM LAYER DATA (Phase 5)
+// ============================================================
+
+import type { UEBAEntity, IOC, KillChain, CorrelatedAlert, SIEMLayerStatus } from '../types';
+
+export const uebaEntities: UEBAEntity[] = [
+    {
+        deviceId: 'DEV-005', deviceName: 'Smart Lock - Server Room', driftSigma: 4.2, status: 'alert',
+        features: [
+            { name: 'conn_rate', baseline: 5.2, current: 48.7, unit: '/hr' },
+            { name: 'dns_entropy', baseline: 0.31, current: 2.87, unit: '' },
+            { name: 'iat_mean', baseline: 120, current: 15, unit: 'ms' },
+            { name: 'bytes_ratio', baseline: 0.8, current: 3.2, unit: '' },
+            { name: 'off_hours', baseline: 0.05, current: 0.72, unit: '%' },
+            { name: 'unique_dst', baseline: 3, current: 24, unit: '' },
+        ],
+        cusumHistory: [
+            { day: 'Mar 3', value: 0.2 }, { day: 'Mar 4', value: 0.5 }, { day: 'Mar 5', value: 1.1 },
+            { day: 'Mar 6', value: 1.8 }, { day: 'Mar 7', value: 2.5 }, { day: 'Mar 8', value: 3.4 }, { day: 'Mar 9', value: 4.2 },
+        ],
+    },
+    {
+        deviceId: 'DEV-004', deviceName: 'Medical Monitor', driftSigma: 2.8, status: 'drift',
+        features: [
+            { name: 'conn_rate', baseline: 8.1, current: 32.4, unit: '/hr' },
+            { name: 'dns_entropy', baseline: 0.45, current: 1.92, unit: '' },
+            { name: 'iat_mean', baseline: 200, current: 60, unit: 'ms' },
+            { name: 'bytes_ratio', baseline: 1.0, current: 2.5, unit: '' },
+            { name: 'off_hours', baseline: 0.1, current: 0.45, unit: '%' },
+            { name: 'unique_dst', baseline: 5, current: 14, unit: '' },
+        ],
+        cusumHistory: [
+            { day: 'Mar 3', value: 0.1 }, { day: 'Mar 4', value: 0.4 }, { day: 'Mar 5', value: 0.8 },
+            { day: 'Mar 6', value: 1.2 }, { day: 'Mar 7', value: 1.7 }, { day: 'Mar 8', value: 2.3 }, { day: 'Mar 9', value: 2.8 },
+        ],
+    },
+    {
+        deviceId: 'DEV-012', deviceName: 'Infusion Pump', driftSigma: 3.6, status: 'alert',
+        features: [
+            { name: 'conn_rate', baseline: 2.0, current: 22.1, unit: '/hr' },
+            { name: 'dns_entropy', baseline: 0.2, current: 2.1, unit: '' },
+            { name: 'iat_mean', baseline: 300, current: 55, unit: 'ms' },
+            { name: 'bytes_ratio', baseline: 0.5, current: 4.8, unit: '' },
+            { name: 'off_hours', baseline: 0.02, current: 0.65, unit: '%' },
+            { name: 'unique_dst', baseline: 2, current: 18, unit: '' },
+        ],
+        cusumHistory: [
+            { day: 'Mar 3', value: 0.3 }, { day: 'Mar 4', value: 0.7 }, { day: 'Mar 5', value: 1.5 },
+            { day: 'Mar 6', value: 2.1 }, { day: 'Mar 7', value: 2.6 }, { day: 'Mar 8', value: 3.1 }, { day: 'Mar 9', value: 3.6 },
+        ],
+    },
+    {
+        deviceId: 'DEV-010', deviceName: 'Smart Elevator Panel', driftSigma: 1.9, status: 'drift',
+        features: [
+            { name: 'conn_rate', baseline: 12.4, current: 28.9, unit: '/hr' },
+            { name: 'dns_entropy', baseline: 0.55, current: 1.1, unit: '' },
+            { name: 'iat_mean', baseline: 150, current: 80, unit: 'ms' },
+            { name: 'bytes_ratio', baseline: 0.9, current: 1.8, unit: '' },
+            { name: 'off_hours', baseline: 0.08, current: 0.3, unit: '%' },
+            { name: 'unique_dst', baseline: 6, current: 11, unit: '' },
+        ],
+        cusumHistory: [
+            { day: 'Mar 3', value: 0.1 }, { day: 'Mar 4', value: 0.3 }, { day: 'Mar 5', value: 0.6 },
+            { day: 'Mar 6', value: 0.9 }, { day: 'Mar 7', value: 1.2 }, { day: 'Mar 8', value: 1.5 }, { day: 'Mar 9', value: 1.9 },
+        ],
+    },
+    {
+        deviceId: 'DEV-003', deviceName: 'Industrial PLC #1', driftSigma: 1.1, status: 'drift',
+        features: [
+            { name: 'conn_rate', baseline: 6.0, current: 11.2, unit: '/hr' },
+            { name: 'dns_entropy', baseline: 0.3, current: 0.6, unit: '' },
+            { name: 'iat_mean', baseline: 250, current: 180, unit: 'ms' },
+            { name: 'bytes_ratio', baseline: 0.7, current: 1.1, unit: '' },
+            { name: 'off_hours', baseline: 0.15, current: 0.28, unit: '%' },
+            { name: 'unique_dst', baseline: 4, current: 7, unit: '' },
+        ],
+        cusumHistory: [
+            { day: 'Mar 3', value: 0.0 }, { day: 'Mar 4', value: 0.1 }, { day: 'Mar 5', value: 0.3 },
+            { day: 'Mar 6', value: 0.5 }, { day: 'Mar 7', value: 0.7 }, { day: 'Mar 8', value: 0.9 }, { day: 'Mar 9', value: 1.1 },
+        ],
+    },
+];
+
+export const iocs: IOC[] = [
+    { id: 'IOC-001', type: 'ip', value: '185.220.101.34', source: 'OTX', severity: 'critical', hits: 3, firstSeen: '2026-03-07T12:00:00Z', lastSeen: '2026-03-09T13:00:00Z', active: true, linkedDevices: ['DEV-005'], country: 'DE' },
+    { id: 'IOC-002', type: 'domain', value: 'update-service.xyz', source: 'MISP', severity: 'critical', hits: 2, firstSeen: '2026-03-08T08:00:00Z', lastSeen: '2026-03-09T07:00:00Z', active: true, linkedDevices: ['DEV-004'], country: 'RU' },
+    { id: 'IOC-003', type: 'ip', value: '198.51.100.42', source: 'OTX', severity: 'high', hits: 1, firstSeen: '2026-03-09T05:15:00Z', lastSeen: '2026-03-09T05:15:00Z', active: true, linkedDevices: ['DEV-005'], country: 'CN' },
+    { id: 'IOC-004', type: 'hash', value: 'a1b2c3d4e5f6789012345678abcdef01', source: 'Manual', severity: 'high', hits: 0, firstSeen: '2026-03-06T10:00:00Z', lastSeen: '2026-03-06T10:00:00Z', active: true, linkedDevices: [], country: undefined },
+    { id: 'IOC-005', type: 'domain', value: 'malware.c2-relay.net', source: 'OTX', severity: 'critical', hits: 5, firstSeen: '2026-03-05T14:00:00Z', lastSeen: '2026-03-09T09:00:00Z', active: true, linkedDevices: ['DEV-012'], country: 'KP' },
+    { id: 'IOC-006', type: 'ip', value: '203.0.113.42', source: 'MISP', severity: 'high', hits: 1, firstSeen: '2026-03-09T09:15:00Z', lastSeen: '2026-03-09T09:15:00Z', active: true, linkedDevices: ['DEV-012'], country: 'IR' },
+    { id: 'IOC-007', type: 'cve', value: 'CVE-2024-11382', source: 'NVD', severity: 'critical', hits: 1, firstSeen: '2026-03-01T00:00:00Z', lastSeen: '2026-03-09T05:00:00Z', active: true, linkedDevices: ['DEV-005'], country: undefined },
+    { id: 'IOC-008', type: 'ip', value: '45.33.32.156', source: 'Manual', severity: 'medium', hits: 1, firstSeen: '2026-03-09T08:15:00Z', lastSeen: '2026-03-09T08:15:00Z', active: false, linkedDevices: ['DEV-002'], country: 'US' },
+];
+
+export const killChains: KillChain[] = [
+    {
+        id: 'KC-001', name: 'Server Room Lock Compromise', severity: 'critical', status: 'active',
+        startTime: '2026-03-09T04:58:00Z', duration: '8h 34m', devices: ['DEV-005', 'DEV-010', 'DEV-012'],
+        stages: [
+            { tactic: 'Reconnaissance', technique: 'Port Scanning', deviceId: 'DEV-005', timestamp: '2026-03-09T04:58:00Z', confirmed: true },
+            { tactic: 'Initial Access', technique: 'Exploit Public-Facing App (CVE-2024-11382)', deviceId: 'DEV-005', timestamp: '2026-03-09T05:00:00Z', confirmed: true },
+            { tactic: 'Credential Access', technique: 'LDAP Credential Dump', deviceId: 'DEV-005', timestamp: '2026-03-09T05:15:00Z', confirmed: true },
+            { tactic: 'Lateral Movement', technique: 'Remote Service Exploitation', deviceId: 'DEV-010', timestamp: '2026-03-09T06:30:00Z', confirmed: true },
+            { tactic: 'Command & Control', technique: 'Tor Proxy', deviceId: 'DEV-005', timestamp: '2026-03-09T07:00:00Z', confirmed: true },
+            { tactic: 'Exfiltration', technique: 'Exfiltration Over C2 Channel', deviceId: 'DEV-005', timestamp: '2026-03-09T07:45:00Z', confirmed: false },
+        ],
+    },
+    {
+        id: 'KC-002', name: 'Medical Device Ransomware', severity: 'critical', status: 'active',
+        startTime: '2026-03-09T02:00:00Z', duration: '11h 30m', devices: ['DEV-012', 'DEV-004'],
+        stages: [
+            { tactic: 'Initial Access', technique: 'Unauthorized Firmware Update', deviceId: 'DEV-012', timestamp: '2026-03-09T02:00:00Z', confirmed: true },
+            { tactic: 'Execution', technique: 'SNMP Write Exploitation', deviceId: 'DEV-012', timestamp: '2026-03-09T02:15:00Z', confirmed: true },
+            { tactic: 'Persistence', technique: 'Create Account (svc_backup)', deviceId: 'DEV-012', timestamp: '2026-03-09T02:30:00Z', confirmed: true },
+            { tactic: 'Command & Control', technique: 'DNS Tunneling to C2', deviceId: 'DEV-012', timestamp: '2026-03-09T03:00:00Z', confirmed: true },
+            { tactic: 'Impact', technique: 'Data Encrypted for Impact (LockBit 3.0)', deviceId: 'DEV-012', timestamp: '2026-03-09T03:30:00Z', confirmed: true },
+            { tactic: 'Lateral Movement', technique: 'Beaconing to Adjacent Device', deviceId: 'DEV-004', timestamp: '2026-03-09T06:30:00Z', confirmed: false },
+        ],
+    },
+];
+
+export const correlatedAlerts: CorrelatedAlert[] = [
+    { id: 'CA-001', layers: ['L1', 'L2', 'L3'], deviceId: 'DEV-005', deviceName: 'Smart Lock', severity: 'critical', message: '3-layer correlated — Tor contact + behavioral drift + kill chain progression', timestamp: '2026-03-09T13:32:00Z' },
+    { id: 'CA-002', layers: ['L1', 'L3'], deviceId: 'DEV-012', deviceName: 'Infusion Pump', severity: 'critical', message: 'Network anomaly + ransomware kill chain active', timestamp: '2026-03-09T09:18:00Z' },
+    { id: 'CA-003', layers: ['L1', 'L2'], deviceId: 'DEV-004', deviceName: 'Medical Monitor', severity: 'high', message: 'Network + UEBA drift — C2 beaconing with behavioral anomaly', timestamp: '2026-03-09T12:05:00Z' },
+];
+
+export const siemLayerStatus: SIEMLayerStatus[] = [
+    { layer: 'Layer 1', name: 'Network', status: 'live', detail: 'All flows monitored', color: '#1A56DB' },
+    { layer: 'Layer 2', name: 'UEBA', status: 'live', detail: `${uebaEntities.filter(e => e.status === 'alert').length} alert(s)`, color: '#7E3AF2' },
+    { layer: 'Layer 3', name: 'Correlation', status: 'warning', detail: `${killChains.filter(k => k.status === 'active').length} active chain(s)`, color: '#E02424' },
+    { layer: 'Threat Intel', name: 'IOC Feed', status: 'alert', detail: `${iocs.filter(i => i.hits > 0).length} IOC hit(s)`, color: '#FF5A1F' },
+];
+
+// ============================================================
+// COMPLIANCE DATA
+// ============================================================
+
+import type { ComplianceFunction, SOCQueueItem, AuditEntry } from '../types';
+
+export const complianceFunctions: ComplianceFunction[] = [
+    {
+        name: 'Identify', score: 78, color: '#3B82F6',
+        controls: [
+            { id: 'ID.AM-1', requirement: 'Physical devices inventoried', status: 'pass' },
+            { id: 'ID.AM-2', requirement: 'Software platforms inventoried', status: 'pass' },
+            { id: 'ID.BE-3', requirement: 'Organizational mission understood', status: 'partial', evidence: 'Partial documentation' },
+            { id: 'ID.RA-1', requirement: 'Asset vulnerabilities identified', status: 'pass' },
+        ],
+    },
+    {
+        name: 'Protect', score: 61, color: '#10B981',
+        controls: [
+            { id: 'PR.AC-1', requirement: 'Identities managed for authorized devices', status: 'pass' },
+            { id: 'PR.AC-4', requirement: 'Access permissions managed', status: 'pass' },
+            { id: 'PR.DS-1', requirement: 'Data-at-rest is protected', status: 'fail', evidence: 'Missing encryption on 3 devices' },
+            { id: 'PR.IP-1', requirement: 'Security baseline config created', status: 'partial' },
+        ],
+    },
+    {
+        name: 'Detect', score: 91, color: '#8B5CF6',
+        controls: [
+            { id: 'DE.AE-1', requirement: 'Baseline of network operations established', status: 'pass' },
+            { id: 'DE.AE-3', requirement: 'Event data aggregated and correlated', status: 'pass' },
+            { id: 'DE.CM-1', requirement: 'Network is monitored', status: 'pass' },
+            { id: 'DE.CM-7', requirement: 'Monitoring for unauthorized personnel', status: 'pass' },
+        ],
+    },
+    {
+        name: 'Respond', score: 34, color: '#F59E0B',
+        controls: [
+            { id: 'RS.RP-1', requirement: 'Response plan executed', status: 'partial', evidence: 'Draft playbooks only' },
+            { id: 'RS.CO-2', requirement: 'Incidents reported', status: 'fail', evidence: 'No automated reporting' },
+            { id: 'RS.AN-1', requirement: 'Notifications from detection investigated', status: 'pass' },
+            { id: 'RS.MI-1', requirement: 'Incidents contained', status: 'fail', evidence: 'Manual containment only' },
+        ],
+    },
+    {
+        name: 'Recover', score: 22, color: '#EF4444',
+        controls: [
+            { id: 'RC.RP-1', requirement: 'Recovery plan executed', status: 'fail', evidence: 'No recovery plan exists' },
+            { id: 'RC.IM-1', requirement: 'Recovery plans incorporate lessons learned', status: 'fail' },
+            { id: 'RC.CO-1', requirement: 'Public relations managed', status: 'partial' },
+        ],
+    },
+];
+
+export const overallComplianceScore = Math.round(complianceFunctions.reduce((s, f) => s + f.score, 0) / complianceFunctions.length);
+
+// ============================================================
+// SOC WORKBENCH DATA
+// ============================================================
+
+export const socQueue: SOCQueueItem[] = [
+    { incidentId: 'INC-001', deviceId: 'DEV-005', deviceName: 'Smart Lock', severity: 'critical', summary: 'Tor exit node contact + UEBA alert + kill chain active', assignedTo: 'jitraj', timestamp: '2026-03-09T13:32:00Z', status: 'in_progress' },
+    { incidentId: 'INC-002', deviceId: 'DEV-004', deviceName: 'Medical Monitor', severity: 'high', summary: 'C2 beaconing detected with behavioral drift', assignedTo: 'analyst_1', timestamp: '2026-03-09T12:05:00Z', status: 'in_progress' },
+    { incidentId: 'INC-003', deviceId: 'DEV-012', deviceName: 'Infusion Pump', severity: 'critical', summary: 'Ransomware kill chain — LockBit 3.0 encryption detected', assignedTo: 'jitraj', timestamp: '2026-03-09T09:18:00Z', status: 'queued' },
+    { incidentId: 'INC-004', deviceId: 'DEV-010', deviceName: 'Smart Elevator', severity: 'medium', summary: 'Elevated connection rate — lateral movement suspected', assignedTo: 'unassigned', timestamp: '2026-03-09T08:45:00Z', status: 'queued' },
+];
+
+export const auditLog: AuditEntry[] = [
+    { id: 'AUD-001', analyst: 'jitraj', action: 'Escalated', target: 'INC-001', timestamp: '14:31' },
+    { id: 'AUD-002', analyst: 'jitraj', action: 'Executed VLAN_ISOLATION step 1', target: 'INC-001', timestamp: '14:28' },
+    { id: 'AUD-003', analyst: 'analyst_1', action: 'Assigned self to', target: 'INC-002', timestamp: '14:15' },
+    { id: 'AUD-004', analyst: 'jitraj', action: 'Cleared false positive', target: 'INC-005', timestamp: '13:50' },
+    { id: 'AUD-005', analyst: 'analyst_1', action: 'Added note to', target: 'INC-002', timestamp: '13:42' },
+    { id: 'AUD-006', analyst: 'jitraj', action: 'Started investigation on', target: 'INC-003', timestamp: '13:30' },
+];

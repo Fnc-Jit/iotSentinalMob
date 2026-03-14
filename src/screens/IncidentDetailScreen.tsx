@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
-import { ArrowLeft, AlertTriangle, Shield, Clock, Users, FileText, MessageSquare } from 'lucide-react-native';
+import { ArrowLeft, AlertTriangle, Shield, Clock, Users, FileText, MessageSquare, Play, CheckCircle } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { getIncidentById, getDeviceById } from '../data/mockData';
+import { getIncidentById, getDeviceById, killChains } from '../data/mockData';
 import { RiskBadge, StatusBadge } from '../components/RiskBadge';
+import KillChainStepper from '../components/KillChainStepper';
 import { brandColors, riskColors } from '../theme/colors';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -14,6 +15,31 @@ type Props = {
     route: RouteProp<IncidentsStackParamList, 'IncidentDetail'>;
 };
 
+type DetailTab = 'narrative' | 'evidence' | 'killchain' | 'actions';
+
+// Mock playbook steps per incident
+const playbookSteps: Record<string, { id: string, label: string, status: 'done' | 'active' | 'pending' }[]> = {
+    'INC-001': [
+        { id: '1', label: 'Confirm anomaly via UEBA drift check', status: 'done' },
+        { id: '2', label: 'Isolate device to VLAN 99', status: 'active' },
+        { id: '3', label: 'Notify NOC team lead', status: 'pending' },
+        { id: '4', label: 'File incident report', status: 'pending' },
+    ],
+    'INC-002': [
+        { id: '1', label: 'Verify beaconing pattern', status: 'done' },
+        { id: '2', label: 'Block outbound to C2 IP', status: 'done' },
+        { id: '3', label: 'Segment medical device subnet', status: 'active' },
+        { id: '4', label: 'Run deep packet inspection', status: 'pending' },
+    ],
+    'INC-003': [
+        { id: '1', label: 'Confirm unauthorized firmware', status: 'done' },
+        { id: '2', label: 'Isolate infusion pump', status: 'done' },
+        { id: '3', label: 'Factory reset device', status: 'active' },
+        { id: '4', label: 'Re-flash approved firmware', status: 'pending' },
+        { id: '5', label: 'Clinical engineering review', status: 'pending' },
+    ],
+};
+
 export default function IncidentDetailScreen({ navigation, route }: Props) {
     const { colors } = useTheme();
     const incident = getIncidentById(route.params.incidentId);
@@ -21,6 +47,7 @@ export default function IncidentDetailScreen({ navigation, route }: Props) {
     const [notes, setNotes] = useState<{ text: string; time: string }[]>([]);
     const [noteInput, setNoteInput] = useState('');
     const [status, setStatus] = useState(incident?.status || 'open');
+    const [activeTab, setActiveTab] = useState<DetailTab>('narrative');
 
     if (!incident) {
         return (
@@ -30,18 +57,38 @@ export default function IncidentDetailScreen({ navigation, route }: Props) {
         );
     }
 
+    // Get related kill chains
+    const relatedChains = killChains.filter(kc => kc.devices.includes(incident.deviceId));
+    const steps = playbookSteps[incident.id] || [
+        { id: '1', label: 'Investigate anomaly', status: 'active' as const },
+        { id: '2', label: 'Apply containment', status: 'pending' as const },
+        { id: '3', label: 'Document findings', status: 'pending' as const },
+    ];
+
     const handleAddNote = () => {
         if (!noteInput.trim()) return;
-        // TODO: POST /api/incidents/:id/notes
         setNotes(prev => [{ text: noteInput.trim(), time: new Date().toLocaleTimeString() }, ...prev]);
         setNoteInput('');
     };
 
     const handleStatusChange = (newStatus: string) => {
-        // TODO: PATCH /api/incidents/:id/status
         setStatus(newStatus as any);
         Alert.alert('Status Updated', `Incident status changed to ${newStatus}`);
     };
+
+    const handleExecuteStep = (stepId: string) => {
+        Alert.alert('Execute Step', `Execute playbook step ${stepId}?`, [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Execute', onPress: () => Alert.alert('Success', 'Step executed successfully') },
+        ]);
+    };
+
+    const tabs: { id: DetailTab, label: string }[] = [
+        { id: 'narrative', label: 'Narrative' },
+        { id: 'evidence', label: 'Evidence' },
+        { id: 'killchain', label: 'Kill Chain' },
+        { id: 'actions', label: 'Actions' },
+    ];
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -50,8 +97,21 @@ export default function IncidentDetailScreen({ navigation, route }: Props) {
                 <Text style={[styles.backText, { color: colors.muted }]}>Back to Investigations</Text>
             </TouchableOpacity>
 
+            {/* Tab Bar */}
+            <View style={[styles.tabBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                {tabs.map(tab => (
+                    <TouchableOpacity
+                        key={tab.id}
+                        style={[styles.tabItem, activeTab === tab.id && styles.tabItemActive]}
+                        onPress={() => setActiveTab(tab.id)}
+                    >
+                        <Text style={[styles.tabText, { color: activeTab === tab.id ? '#FFFFFF' : colors.muted }]}>{tab.label}</Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                {/* Risk Summary */}
+                {/* Risk Summary — always visible */}
                 <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <View style={styles.riskRow}>
                         <View style={{ flex: 1 }}>
@@ -72,128 +132,201 @@ export default function IncidentDetailScreen({ navigation, route }: Props) {
                     </View>
                 </View>
 
-                {/* Device Context */}
-                {device && (
+                {/* Narrative Tab */}
+                {activeTab === 'narrative' && (
+                    <>
+                        {/* Device Context */}
+                        {device && (
+                            <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                                <Text style={[styles.sectionTitle, { color: colors.text }]}>Device Context</Text>
+                                {[
+                                    { label: 'Device', value: `${incident.deviceId} · ${device.name}` },
+                                    { label: 'Vendor', value: incident.vendor },
+                                    { label: 'IP', value: incident.ip },
+                                    { label: 'Class', value: device.class },
+                                ].map(info => (
+                                    <View key={info.label} style={styles.infoRow}>
+                                        <Text style={[styles.infoLabel, { color: colors.muted }]}>{info.label}</Text>
+                                        <Text style={[styles.infoValue, { color: colors.text }]}>{info.value}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Narrative */}
+                        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                            <View style={styles.headerRow}>
+                                <FileText size={16} color={brandColors.orange} />
+                                <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Incident Narrative</Text>
+                            </View>
+                            <View style={[styles.narrativeBox, { borderColor: colors.border }]}>
+                                <Text style={[styles.narrativeText, { color: colors.text }]}>{incident.narrative}</Text>
+                            </View>
+                        </View>
+
+                        {/* Recommended Action */}
+                        <View style={[styles.actionCard, { borderColor: brandColors.red + '40' }]}>
+                            <AlertTriangle size={18} color={brandColors.red} />
+                            <View style={{ flex: 1, marginLeft: 10 }}>
+                                <Text style={[styles.actionLabel, { color: colors.muted }]}>Recommended Action</Text>
+                                <Text style={[styles.actionValue, { color: '#FFFFFF' }]}>{incident.recommendedAction}</Text>
+                            </View>
+                        </View>
+
+                        {/* Timeline */}
+                        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                            <View style={styles.headerRow}>
+                                <Clock size={16} color={brandColors.pink} />
+                                <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Timeline</Text>
+                            </View>
+                            {incident.timeline.map((t, i) => (
+                                <View key={i} style={styles.timelineItem}>
+                                    <View style={styles.timelineDot}>
+                                        <View style={[styles.dot, { backgroundColor: i === 0 ? brandColors.red : brandColors.orange }]} />
+                                        {i < incident.timeline.length - 1 && <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />}
+                                    </View>
+                                    <View style={styles.timelineContent}>
+                                        <Text style={[styles.timelineTime, { color: brandColors.orange }]}>{t.time}</Text>
+                                        <Text style={[styles.timelineEvent, { color: colors.text }]}>{t.event}</Text>
+                                    </View>
+                                </View>
+                            ))}
+                        </View>
+
+                        {/* Adjacent Devices */}
+                        {incident.adjacentDevices.length > 0 && (
+                            <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                                <View style={styles.headerRow}>
+                                    <Users size={16} color={brandColors.gold} />
+                                    <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Adjacent Devices at Risk</Text>
+                                </View>
+                                {incident.adjacentDevices.map(did => {
+                                    const d = getDeviceById(did);
+                                    return (
+                                        <View key={did} style={[styles.adjDevice, { borderColor: colors.border }]}>
+                                            <Text style={[styles.adjId, { color: colors.text }]}>{did}</Text>
+                                            <Text style={[styles.adjName, { color: colors.muted }]}>{d?.name || 'Unknown'}</Text>
+                                            {d && <RiskBadge level={d.riskLevel} size="sm" />}
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        )}
+                    </>
+                )}
+
+                {/* Evidence Tab */}
+                {activeTab === 'evidence' && (
                     <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Device Context</Text>
-                        {[
-                            { label: 'Device', value: `${incident.deviceId} · ${device.name}` },
-                            { label: 'Vendor', value: incident.vendor },
-                            { label: 'IP', value: incident.ip },
-                            { label: 'Class', value: device.class },
-                        ].map(info => (
-                            <View key={info.label} style={styles.infoRow}>
-                                <Text style={[styles.infoLabel, { color: colors.muted }]}>{info.label}</Text>
-                                <Text style={[styles.infoValue, { color: colors.text }]}>{info.value}</Text>
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Evidence ({incident.evidence.length})</Text>
+                        {incident.evidence.map((ev, i) => (
+                            <View key={i} style={[styles.evidenceItem, { borderColor: colors.border }]}>
+                                <View style={[styles.evidenceNum, { backgroundColor: brandColors.red + '20' }]}>
+                                    <Text style={{ color: brandColors.red, fontSize: 11, fontWeight: '700' }}>{i + 1}</Text>
+                                </View>
+                                <Text style={[styles.evidenceText, { color: colors.text }]}>{ev}</Text>
                             </View>
                         ))}
                     </View>
                 )}
 
-                {/* Narrative */}
-                <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <View style={styles.headerRow}>
-                        <FileText size={16} color={brandColors.orange} />
-                        <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Incident Narrative</Text>
-                    </View>
-                    <View style={[styles.narrativeBox, { borderColor: colors.border }]}>
-                        <Text style={[styles.narrativeText, { color: colors.text }]}>{incident.narrative}</Text>
-                    </View>
-                </View>
-
-                {/* Evidence */}
-                <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Evidence ({incident.evidence.length})</Text>
-                    {incident.evidence.map((ev, i) => (
-                        <View key={i} style={[styles.evidenceItem, { borderColor: colors.border }]}>
-                            <View style={[styles.evidenceNum, { backgroundColor: brandColors.red + '20' }]}>
-                                <Text style={{ color: brandColors.red, fontSize: 11, fontWeight: '700' }}>{i + 1}</Text>
-                            </View>
-                            <Text style={[styles.evidenceText, { color: colors.text }]}>{ev}</Text>
-                        </View>
-                    ))}
-                </View>
-
-                {/* Recommended Action */}
-                <View style={[styles.actionCard, { borderColor: brandColors.red + '40' }]}>
-                    <AlertTriangle size={18} color={brandColors.red} />
-                    <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={[styles.actionLabel, { color: colors.muted }]}>Recommended Action</Text>
-                        <Text style={[styles.actionValue, { color: '#FFFFFF' }]}>{incident.recommendedAction}</Text>
-                    </View>
-                </View>
-
-                {/* Adjacent Devices */}
-                {incident.adjacentDevices.length > 0 && (
+                {/* Kill Chain Tab */}
+                {activeTab === 'killchain' && (
                     <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
                         <View style={styles.headerRow}>
-                            <Users size={16} color={brandColors.gold} />
-                            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Adjacent Devices at Risk</Text>
+                            <Shield size={16} color="#E02424" />
+                            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Kill Chain Analysis</Text>
                         </View>
-                        {incident.adjacentDevices.map(did => {
-                            const d = getDeviceById(did);
-                            return (
-                                <View key={did} style={[styles.adjDevice, { borderColor: colors.border }]}>
-                                    <Text style={[styles.adjId, { color: colors.text }]}>{did}</Text>
-                                    <Text style={[styles.adjName, { color: colors.muted }]}>{d?.name || 'Unknown'}</Text>
-                                    {d && <RiskBadge level={d.riskLevel} size="sm" />}
+                        {relatedChains.length === 0 ? (
+                            <View style={styles.emptySection}>
+                                <Shield size={28} color={colors.muted} style={{ opacity: 0.3 }} />
+                                <Text style={[styles.emptyText, { color: colors.muted }]}>No kill chain detected</Text>
+                            </View>
+                        ) : (
+                            relatedChains.map(chain => (
+                                <View key={chain.id} style={{ marginBottom: 20 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                        <Text style={[styles.chainName, { color: colors.text }]}>{chain.name}</Text>
+                                        <View style={[styles.severityPill, { backgroundColor: chain.severity === 'critical' ? '#FF4C4C15' : '#FF6B3515' }]}>
+                                            <Text style={{ fontSize: 8, fontWeight: '700', color: chain.severity === 'critical' ? '#FF4C4C' : '#FF6B35' }}>{chain.severity.toUpperCase()}</Text>
+                                        </View>
+                                    </View>
+                                    <Text style={[styles.chainMeta, { color: colors.muted }]}>{chain.stages.length} stages · {chain.devices.length} devices · {chain.duration}</Text>
+                                    <View style={{ marginTop: 12 }}>
+                                        <KillChainStepper stages={chain.stages} highlightDeviceId={incident.deviceId} />
+                                    </View>
                                 </View>
-                            );
-                        })}
+                            ))
+                        )}
                     </View>
                 )}
 
-                {/* Timeline */}
-                <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <View style={styles.headerRow}>
-                        <Clock size={16} color={brandColors.pink} />
-                        <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Timeline</Text>
-                    </View>
-                    {incident.timeline.map((t, i) => (
-                        <View key={i} style={styles.timelineItem}>
-                            <View style={styles.timelineDot}>
-                                <View style={[styles.dot, { backgroundColor: i === 0 ? brandColors.red : brandColors.orange }]} />
-                                {i < incident.timeline.length - 1 && <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />}
+                {/* Actions Tab */}
+                {activeTab === 'actions' && (
+                    <>
+                        {/* Playbook Steps */}
+                        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                            <View style={styles.headerRow}>
+                                <Play size={16} color="#10B981" />
+                                <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Playbook Steps</Text>
                             </View>
-                            <View style={styles.timelineContent}>
-                                <Text style={[styles.timelineTime, { color: brandColors.orange }]}>{t.time}</Text>
-                                <Text style={[styles.timelineEvent, { color: colors.text }]}>{t.event}</Text>
+                            {steps.map(step => (
+                                <View key={step.id} style={[styles.stepRow, { borderColor: colors.border }]}>
+                                    <View style={[styles.stepDot, {
+                                        backgroundColor: step.status === 'done' ? '#10B981' : step.status === 'active' ? '#F59E0B' : colors.border,
+                                        borderColor: step.status === 'done' ? '#10B981' : step.status === 'active' ? '#F59E0B' : colors.border,
+                                    }]}>
+                                        {step.status === 'done' && <CheckCircle size={10} color="#fff" />}
+                                    </View>
+                                    <Text style={[styles.stepLabel, {
+                                        color: step.status === 'done' ? '#4BDE80' : step.status === 'active' ? '#F59E0B' : colors.muted,
+                                        textDecorationLine: step.status === 'done' ? 'line-through' : 'none',
+                                    }]}>{step.label}</Text>
+                                    {step.status === 'active' && (
+                                        <TouchableOpacity
+                                            style={styles.executeBtn}
+                                            onPress={() => handleExecuteStep(step.id)}
+                                        >
+                                            <Text style={styles.executeBtnText}>Execute</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            ))}
+                        </View>
+
+                        {/* Status Control */}
+                        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                            <Text style={[styles.sectionTitle, { color: colors.text }]}>Change Status</Text>
+                            <View style={styles.statusRow}>
+                                {['open', 'investigating', 'resolved', 'closed'].map(s => (
+                                    <TouchableOpacity key={s} style={[styles.statusBtn, status === s && styles.statusBtnActive]} onPress={() => handleStatusChange(s)}>
+                                        <Text style={[styles.statusBtnText, status === s && styles.statusBtnTextActive]}>{s.charAt(0).toUpperCase() + s.slice(1)}</Text>
+                                    </TouchableOpacity>
+                                ))}
                             </View>
                         </View>
-                    ))}
-                </View>
 
-                {/* Status Control */}
-                <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Change Status</Text>
-                    <View style={styles.statusRow}>
-                        {['open', 'investigating', 'resolved', 'closed'].map(s => (
-                            <TouchableOpacity key={s} style={[styles.statusBtn, status === s && styles.statusBtnActive]} onPress={() => handleStatusChange(s)}>
-                                <Text style={[styles.statusBtnText, status === s && styles.statusBtnTextActive]}>{s.charAt(0).toUpperCase() + s.slice(1)}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </View>
-
-                {/* Analyst Notes */}
-                <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <View style={styles.headerRow}>
-                        <MessageSquare size={16} color={brandColors.green} />
-                        <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Analyst Notes</Text>
-                    </View>
-                    <View style={styles.noteInputRow}>
-                        <TextInput style={[styles.noteInput, { color: colors.text, borderColor: colors.border }]} placeholder="Add a note..." placeholderTextColor={colors.muted} value={noteInput} onChangeText={setNoteInput} multiline />
-                        <TouchableOpacity style={styles.noteBtn} onPress={handleAddNote}>
-                            <Text style={styles.noteBtnText}>Add</Text>
-                        </TouchableOpacity>
-                    </View>
-                    {notes.map((n, i) => (
-                        <View key={i} style={[styles.noteItem, { borderColor: colors.border }]}>
-                            <Text style={[styles.noteText, { color: colors.text }]}>{n.text}</Text>
-                            <Text style={[styles.noteTime, { color: colors.muted }]}>Analyst · {n.time}</Text>
+                        {/* Analyst Notes */}
+                        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                            <View style={styles.headerRow}>
+                                <MessageSquare size={16} color={brandColors.green} />
+                                <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Analyst Notes</Text>
+                            </View>
+                            <View style={styles.noteInputRow}>
+                                <TextInput style={[styles.noteInput, { color: colors.text, borderColor: colors.border }]} placeholder="Add a note..." placeholderTextColor={colors.muted} value={noteInput} onChangeText={setNoteInput} multiline />
+                                <TouchableOpacity style={styles.noteBtn} onPress={handleAddNote}>
+                                    <Text style={styles.noteBtnText}>Add</Text>
+                                </TouchableOpacity>
+                            </View>
+                            {notes.map((n, i) => (
+                                <View key={i} style={[styles.noteItem, { borderColor: colors.border }]}>
+                                    <Text style={[styles.noteText, { color: colors.text }]}>{n.text}</Text>
+                                    <Text style={[styles.noteTime, { color: colors.muted }]}>Analyst · {n.time}</Text>
+                                </View>
+                            ))}
                         </View>
-                    ))}
-                </View>
+                    </>
+                )}
             </ScrollView>
         </View>
     );
@@ -203,6 +336,10 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     backBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
     backText: { fontSize: 14 },
+    tabBar: { flexDirection: 'row', borderBottomWidth: 1, paddingHorizontal: 8 },
+    tabItem: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+    tabItemActive: { borderBottomColor: brandColors.orange },
+    tabText: { fontSize: 12, fontWeight: '600' },
     scroll: { padding: 16, paddingBottom: 100 },
     section: { borderRadius: 14, padding: 16, borderWidth: 1, marginBottom: 16 },
     sectionTitle: { fontSize: 15, fontWeight: '700', marginBottom: 12 },
@@ -234,6 +371,16 @@ const styles = StyleSheet.create({
     timelineContent: { flex: 1, paddingLeft: 10, paddingBottom: 16 },
     timelineTime: { fontSize: 12, fontWeight: '700', marginBottom: 2 },
     timelineEvent: { fontSize: 13, lineHeight: 18 },
+    chainName: { fontSize: 14, fontWeight: '600' },
+    severityPill: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 },
+    chainMeta: { fontSize: 11, marginBottom: 4 },
+    emptySection: { alignItems: 'center', paddingVertical: 30, gap: 8 },
+    emptyText: { fontSize: 13 },
+    stepRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 10, borderBottomWidth: 1 },
+    stepDot: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+    stepLabel: { flex: 1, fontSize: 13 },
+    executeBtn: { backgroundColor: '#10B981', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8 },
+    executeBtnText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
     statusRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
     statusBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
     statusBtnActive: { backgroundColor: '#FF6B35', borderColor: '#FF6B35' },

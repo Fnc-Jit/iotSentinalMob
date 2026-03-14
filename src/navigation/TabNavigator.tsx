@@ -1,10 +1,10 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { LayoutDashboard, Cpu, AlertTriangle, Bell, Network, Settings } from 'lucide-react-native';
+import { LayoutDashboard, Cpu, AlertTriangle, Bell, MoreHorizontal } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { brandColors } from '../theme/colors';
-import type { MainTabParamList, DevicesStackParamList, IncidentsStackParamList } from './types';
+import type { MainTabParamList, DevicesStackParamList, IncidentsStackParamList, MoreStackParamList } from './types';
 
 import DashboardScreen from '../screens/DashboardScreen';
 import DevicesScreen from '../screens/DevicesScreen';
@@ -12,6 +12,12 @@ import DeviceDetailScreen from '../screens/DeviceDetailScreen';
 import IncidentsScreen from '../screens/IncidentsScreen';
 import IncidentDetailScreen from '../screens/IncidentDetailScreen';
 import AlertsScreen from '../screens/AlertsScreen';
+import MoreScreen from '../screens/MoreScreen';
+import UEBAScreen from '../screens/UEBAScreen';
+import ThreatFeedScreen from '../screens/ThreatFeedScreen';
+import KillChainScreen from '../screens/KillChainScreen';
+import ComplianceScreen from '../screens/ComplianceScreen';
+import SOCWorkbenchScreen from '../screens/SOCWorkbenchScreen';
 import TopologyScreen from '../screens/TopologyScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
@@ -37,7 +43,24 @@ function IncidentsStackScreen() {
     );
 }
 
-// Bottom Tab Navigator
+// More sub-stack (hub → SIEM screens)
+const MoreStack = createNativeStackNavigator<MoreStackParamList>();
+function MoreStackScreen() {
+    return (
+        <MoreStack.Navigator screenOptions={{ headerShown: false }}>
+            <MoreStack.Screen name="MoreHub" component={MoreScreen} />
+            <MoreStack.Screen name="UEBAScreenNav" component={UEBAScreen} />
+            <MoreStack.Screen name="KillChainScreen" component={KillChainScreen} />
+            <MoreStack.Screen name="ComplianceScreen" component={ComplianceScreen} />
+            <MoreStack.Screen name="ThreatFeedScreenNav" component={ThreatFeedScreen} />
+            <MoreStack.Screen name="SOCWorkbenchScreen" component={SOCWorkbenchScreen} />
+            <MoreStack.Screen name="TopologyScreenNav" component={TopologyScreen} />
+            <MoreStack.Screen name="SettingsScreenNav" component={SettingsScreen} />
+        </MoreStack.Navigator>
+    );
+}
+
+// Bottom Tab Navigator — 5 main tabs
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function TabNavigator() {
@@ -97,19 +120,11 @@ export default function TabNavigator() {
                 }}
             />
             <Tab.Screen
-                name="TopologyTab"
-                component={TopologyScreen}
+                name="MoreTab"
+                component={MoreStackScreen}
                 options={{
-                    tabBarLabel: 'Topology',
-                    tabBarIcon: ({ color, size }) => <Network size={size} color={color} />,
-                }}
-            />
-            <Tab.Screen
-                name="SettingsTab"
-                component={SettingsScreen}
-                options={{
-                    tabBarLabel: 'Settings',
-                    tabBarIcon: ({ color, size }) => <Settings size={size} color={color} />,
+                    tabBarLabel: 'More',
+                    tabBarIcon: ({ color, size }) => <MoreHorizontal size={size} color={color} />,
                 }}
             />
         </Tab.Navigator>

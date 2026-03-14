@@ -9,8 +9,7 @@ export type MainTabParamList = {
     DevicesTab: undefined;
     IncidentsTab: undefined;
     AlertsTab: undefined;
-    TopologyTab: undefined;
-    SettingsTab: undefined;
+    MoreTab: undefined;
 };
 
 export type DevicesStackParamList = {
@@ -21,4 +20,15 @@ export type DevicesStackParamList = {
 export type IncidentsStackParamList = {
     IncidentsList: undefined;
     IncidentDetail: { incidentId: string };
+};
+
+export type MoreStackParamList = {
+    MoreHub: undefined;
+    UEBAScreenNav: undefined;
+    KillChainScreen: undefined;
+    ComplianceScreen: undefined;
+    ThreatFeedScreenNav: undefined;
+    SOCWorkbenchScreen: undefined;
+    TopologyScreenNav: undefined;
+    SettingsScreenNav: undefined;
 };

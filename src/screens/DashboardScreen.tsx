@@ -4,8 +4,10 @@ import { Cpu, Shield, AlertTriangle, Activity, TrendingDown } from 'lucide-react
 import Svg, { Circle, Path, Line, Text as SvgText, G, Rect } from 'react-native-svg';
 import { useTheme } from '../theme/ThemeContext';
 import { brandColors } from '../theme/colors';
-import { dashboardStats, riskDistribution, trendData, devices, incidents } from '../data/mockData';
+import { dashboardStats, riskDistribution, trendData, devices, incidents, siemLayerStatus, correlatedAlerts } from '../data/mockData';
 import { RiskBadge, StatusBadge } from '../components/RiskBadge';
+import SIEMLayerChip from '../components/SIEMLayerChip';
+import CorrelatedAlertBanner from '../components/CorrelatedAlertBanner';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { MainTabParamList } from '../navigation/types';
 
@@ -214,6 +216,28 @@ export default function DashboardScreen({ navigation }: Props) {
                     </>
                 ) : (
                     <>
+                        {/* SIEM Health Strip */}
+                        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                            <Text style={[styles.sectionTitle, { color: colors.text }]}>SIEM Layer Status</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                <View style={{ flexDirection: 'row', gap: 8 }}>
+                                    {siemLayerStatus.map(layer => (
+                                        <SIEMLayerChip key={layer.layer} layer={`${layer.name} · ${layer.detail}`} color={layer.color} status={layer.status} />
+                                    ))}
+                                </View>
+                            </ScrollView>
+                        </View>
+
+                        {/* Correlated Alerts */}
+                        {correlatedAlerts.length > 0 && (
+                            <View style={{ marginBottom: 16 }}>
+                                <Text style={[styles.sectionTitle, { color: brandColors.red, fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 8 }]}>⚡ CORRELATED ALERTS</Text>
+                                {correlatedAlerts.slice(0, 3).map(ca => (
+                                    <CorrelatedAlertBanner key={ca.id} alert={ca} />
+                                ))}
+                            </View>
+                        )}
+
                         {/* Security Posture Tab */}
                         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
                             <Text style={[styles.sectionTitle, { color: colors.text }]}>Executive Summary</Text>
