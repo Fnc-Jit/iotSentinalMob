@@ -18,6 +18,7 @@ import ThreatFeedScreen from '../screens/ThreatFeedScreen';
 import KillChainScreen from '../screens/KillChainScreen';
 import ComplianceScreen from '../screens/ComplianceScreen';
 import SOCWorkbenchScreen from '../screens/SOCWorkbenchScreen';
+import CLIScreen from '../screens/CLIScreen';
 import TopologyScreen from '../screens/TopologyScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
@@ -54,6 +55,7 @@ function MoreStackScreen() {
             <MoreStack.Screen name="ComplianceScreen" component={ComplianceScreen} />
             <MoreStack.Screen name="ThreatFeedScreenNav" component={ThreatFeedScreen} />
             <MoreStack.Screen name="SOCWorkbenchScreen" component={SOCWorkbenchScreen} />
+            <MoreStack.Screen name="CLIScreen" component={CLIScreen} />
             <MoreStack.Screen name="TopologyScreenNav" component={TopologyScreen} />
             <MoreStack.Screen name="SettingsScreenNav" component={SettingsScreen} />
         </MoreStack.Navigator>

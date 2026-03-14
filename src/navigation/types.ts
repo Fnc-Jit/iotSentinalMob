@@ -29,6 +29,7 @@ export type MoreStackParamList = {
     ComplianceScreen: undefined;
     ThreatFeedScreenNav: undefined;
     SOCWorkbenchScreen: undefined;
+    CLIScreen: undefined;
     TopologyScreenNav: undefined;
     SettingsScreenNav: undefined;
 };

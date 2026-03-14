@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { Activity, Shield, ClipboardCheck, Globe, Wrench, ChevronRight, Network, Settings } from 'lucide-react-native';
+import { Activity, Shield, ClipboardCheck, Globe, Wrench, ChevronRight, Network, Settings, Terminal } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { brandColors } from '../theme/colors';
 import { uebaEntities, killChains, iocs, overallComplianceScore, socQueue } from '../data/mockData';
@@ -34,6 +34,10 @@ export default function MoreScreen({ navigation }: Props) {
         {
             id: 'SOCWorkbenchScreen', icon: Wrench, label: 'SOC Workbench', subtitle: 'Analyst triage & playbooks',
             color: '#10B981', badge: `${socQueue.filter(q => q.status !== 'resolved').length} queue`, badgeColor: '#10B981',
+        },
+        {
+            id: 'CLIScreen', icon: Terminal, label: 'Sentinel CLI', subtitle: 'Interactive terminal & commands',
+            color: '#4BDE80',
         },
         {
             id: 'TopologyScreenNav', icon: Network, label: 'Topology', subtitle: 'Network graph visualization',
@@ -81,9 +85,32 @@ export default function MoreScreen({ navigation }: Props) {
                 );
             })}
 
+            {/* Tools Section */}
+            <Text style={[styles.sectionLabel, { color: colors.muted, marginTop: 20 }]}>TOOLS</Text>
+            {menuItems.slice(5, 6).map(item => {
+                const Icon = item.icon;
+                return (
+                    <TouchableOpacity
+                        key={item.id}
+                        style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                        onPress={() => navigation.navigate(item.id as any)}
+                        activeOpacity={0.7}
+                    >
+                        <View style={[styles.menuIcon, { backgroundColor: item.color + '15' }]}>
+                            <Icon size={22} color={item.color} />
+                        </View>
+                        <View style={styles.menuInfo}>
+                            <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
+                            <Text style={[styles.menuSubtitle, { color: colors.muted }]}>{item.subtitle}</Text>
+                        </View>
+                        <ChevronRight size={16} color={colors.muted} />
+                    </TouchableOpacity>
+                );
+            })}
+
             {/* Other Section */}
             <Text style={[styles.sectionLabel, { color: colors.muted, marginTop: 20 }]}>OTHER</Text>
-            {menuItems.slice(5).map(item => {
+            {menuItems.slice(6).map(item => {
                 const Icon = item.icon;
                 return (
                     <TouchableOpacity
