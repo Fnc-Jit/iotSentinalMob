@@ -42,7 +42,7 @@ export default function LoginScreen({ navigation }: Props) {
                     <LinearGradient colors={['#FF6B35', '#E8478C']} style={styles.logoIcon}>
                         <Shield size={28} color="#FFFFFF" />
                     </LinearGradient>
-                    <Text style={styles.logoText}>iot<Text style={styles.logoTextLight}>sentinel</Text></Text>
+                    <Text style={styles.logoText}>Sentinel</Text>
                     <Text style={styles.subtitle}>Enterprise Security Platform</Text>
                 </View>
 
