@@ -3,6 +3,9 @@
     "name": "IoTSentinelMobile",
     "slug": "IoTSentinelMobile",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,6 +18,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.fncjit.iotsentinel",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -25,6 +29,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "4e8fc6fd-7e5f-4dec-baf2-54288b35089b"
+      }
+    },
+    "owner": "fnc_jit",
+    "updates": {
+      "url": "https://u.expo.dev/4e8fc6fd-7e5f-4dec-baf2-54288b35089b"
     }
   }
 }
