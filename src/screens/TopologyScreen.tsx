@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import Svg, { Circle, Line, Text as SvgText, G } from 'react-native-svg';
-import { ZoomIn, ZoomOut, Maximize2, X, ExternalLink } from 'lucide-react-native';
+import { ZoomIn, ZoomOut, Maximize2, X, ExternalLink, Network, Link2, Brain } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useTheme } from '../theme/ThemeContext';
-import { devices, getDeviceById } from '../data/mockData';
+import { devices, getDeviceById, killChains, uebaEntities } from '../data/mockData';
+
+// Devices involved in UEBA entities
+const uebaDeviceIds = new Set(uebaEntities.map(e => e.deviceId));
+// Devices involved in kill chains
+const killChainDeviceIds = new Set(killChains.flatMap(kc => kc.devices));
 import { riskColors, brandColors } from '../theme/colors';
 import { RiskBadge, StatusBadge } from '../components/RiskBadge';
 
@@ -36,7 +41,10 @@ const edges = [
 ];
 
 // Get risk-based line color for an edge
-function getEdgeColor(edge: typeof edges[0]): string {
+function getEdgeColor(edge: typeof edges[0], activeLayer: string): string {
+    if (activeLayer === 'killchain' && edge.suspicious) return '#E8478C';
+    if (activeLayer === 'ueba' && edge.source !== 'GATEWAY' && edge.target !== 'GATEWAY') return '#FFB347';
+
     if (edge.suspicious) return '#FF4C4C';
     const targetDevice = getDeviceById(edge.target);
     if (!targetDevice) return '#4BDE80';
@@ -78,8 +86,24 @@ const SVG_H = 380;
 export default function TopologyScreen() {
     const { colors } = useTheme();
     const [selectedNode, setSelectedNode] = useState<string | null>(null);
+    const [activeLayer, setActiveLayer] = useState<'network' | 'killchain' | 'ueba'>('network');
     const selectedDevice = selectedNode ? getDeviceById(selectedNode) : null;
     const navigation = useNavigation<any>();
+
+    const visibleNodes = React.useMemo(() => {
+        if (activeLayer === 'killchain') return nodes.filter(n => killChainDeviceIds.has(n.id) || n.id === 'GATEWAY');
+        if (activeLayer === 'ueba') return nodes.filter(n => uebaDeviceIds.has(n.id) || n.id === 'GATEWAY');
+        return nodes;
+    }, [activeLayer]);
+
+    const visibleEdges = React.useMemo(() => {
+        const visibleNodeIds = new Set(visibleNodes.map(n => n.id));
+        let activeEdges = edges.filter(e => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target));
+        if (activeLayer === 'killchain') {
+            activeEdges = activeEdges.filter(e => e.suspicious || e.source === 'GATEWAY' || e.target === 'GATEWAY');
+        }
+        return activeEdges;
+    }, [activeLayer, visibleNodes]);
 
     // Pinch-to-zoom state
     const scale = useSharedValue(1);
@@ -157,16 +181,48 @@ export default function TopologyScreen() {
                 </View>
             </View>
 
+            {/* Layer Toggles */}
+            <View style={[styles.layerTogglesContainer, { backgroundColor: colors.surface, borderBottomWidth: 1, borderColor: colors.border }]}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.layerTogglesContent}>
+                    <TouchableOpacity
+                        style={[styles.layerToggle, activeLayer === 'network' && styles.layerToggleActive, { borderColor: activeLayer === 'network' ? '#3B82F6' : colors.border }]}
+                        onPress={() => setActiveLayer('network')}
+                    >
+                        <Network size={14} color={activeLayer === 'network' ? '#3B82F6' : colors.muted} />
+                        <Text style={[styles.layerToggleText, { color: activeLayer === 'network' ? '#3B82F6' : colors.muted }]}>Network Flows</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.layerToggle, activeLayer === 'killchain' && styles.layerToggleActive, { borderColor: activeLayer === 'killchain' ? '#E8478C' : colors.border }]}
+                        onPress={() => setActiveLayer('killchain')}
+                    >
+                        <Link2 size={14} color={activeLayer === 'killchain' ? '#E8478C' : colors.muted} />
+                        <Text style={[styles.layerToggleText, { color: activeLayer === 'killchain' ? '#E8478C' : colors.muted }]}>Kill Chain Paths</Text>
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>2</Text>
+                        </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.layerToggle, activeLayer === 'ueba' && styles.layerToggleActive, { borderColor: activeLayer === 'ueba' ? '#FFB347' : colors.border }]}
+                        onPress={() => setActiveLayer('ueba')}
+                    >
+                        <Brain size={14} color={activeLayer === 'ueba' ? '#FFB347' : colors.muted} />
+                        <Text style={[styles.layerToggleText, { color: activeLayer === 'ueba' ? '#FFB347' : colors.muted }]}>UEBA Graph</Text>
+                    </TouchableOpacity>
+                </ScrollView>
+            </View>
+
             {/* Pinch-to-Zoom Graph */}
             <GestureDetector gesture={composed}>
                 <Animated.View style={[styles.graphArea, animatedStyle]}>
                     <Svg width={SVG_W} height={SVG_H}>
                         {/* Animated Edges */}
-                        {edges.map((edge, i) => {
-                            const src = nodes.find(n => n.id === edge.source);
-                            const tgt = nodes.find(n => n.id === edge.target);
+                        {visibleEdges.map((edge, i) => {
+                            const src = visibleNodes.find(n => n.id === edge.source);
+                            const tgt = visibleNodes.find(n => n.id === edge.target);
                             if (!src || !tgt) return null;
-                            const edgeColor = getEdgeColor(edge);
+                            const edgeColor = getEdgeColor(edge, activeLayer);
                             return (
                                 <AnimatedEdge
                                     key={i}
@@ -179,13 +235,16 @@ export default function TopologyScreen() {
                         })}
 
                         {/* Nodes */}
-                        {nodes.map(node => {
+                        {visibleNodes.map(node => {
                             const device = getDeviceById(node.id);
                             const isGateway = node.id === 'GATEWAY';
                             const riskLevel = isGateway ? 'trusted' : (device?.riskLevel || 'low');
                             const nodeColor = riskColors[riskLevel] || '#8B8FA3';
                             const nodeR = isGateway ? 18 : 14;
                             const isSelected = selectedNode === node.id;
+                            
+                            const isUeba = uebaDeviceIds.has(node.id);
+                            const isKillChain = killChainDeviceIds.has(node.id);
 
                             return (
                                 <G key={node.id} onPress={() => setSelectedNode(isSelected ? null : node.id)}>
@@ -196,6 +255,15 @@ export default function TopologyScreen() {
                                         </>
                                     )}
                                     {isSelected && <Circle cx={node.x} cy={node.y} r={nodeR + 6} fill="none" stroke="#FFFFFF" strokeWidth={2} />}
+
+                                    {/* Layer specific highlights */}
+                                    {activeLayer === 'ueba' && isUeba && (
+                                        <Circle cx={node.x} cy={node.y} r={nodeR + 10} fill="none" stroke="#FFB347" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.6} />
+                                    )}
+                                    {activeLayer === 'killchain' && isKillChain && (
+                                        <Circle cx={node.x} cy={node.y} r={nodeR + 10} fill="none" stroke="#E8478C" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.6} />
+                                    )}
+
                                     <Circle cx={node.x} cy={node.y} r={nodeR} fill={nodeColor + '30'} stroke={nodeColor} strokeWidth={2} />
                                     <SvgText x={node.x} y={node.y + 4} textAnchor="middle" fill={nodeColor} fontWeight="700" fontSize={isGateway ? 8 : 7}>
                                         {isGateway ? 'GW' : node.id.replace('DEV-', '')}
@@ -203,6 +271,13 @@ export default function TopologyScreen() {
                                     <SvgText x={node.x} y={node.y + (isGateway ? 26 : 22)} textAnchor="middle" fill="#8B8FA3" fontSize={7}>
                                         {isGateway ? 'Gateway' : (device?.name.split(' ')[0] || '')}
                                     </SvgText>
+                                    
+                                    {/* UEBA Drift Value */}
+                                    {activeLayer === 'ueba' && isUeba && (
+                                        <SvgText x={node.x + nodeR + 2} y={node.y - nodeR} fontSize={7} fill="#FFB347" fontWeight="bold">
+                                            {uebaEntities.find(e => e.deviceId === node.id)?.driftSigma.toFixed(1)}σ
+                                        </SvgText>
+                                    )}
                                 </G>
                             );
                         })}
@@ -274,6 +349,13 @@ const styles = StyleSheet.create({
     title: { fontSize: 16, fontWeight: '700' },
     zoomBtns: { flexDirection: 'row', gap: 8 },
     zoomBtn: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    layerTogglesContainer: { paddingVertical: 12 },
+    layerTogglesContent: { paddingHorizontal: 16, gap: 12 },
+    layerToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, backgroundColor: 'rgba(255,255,255,0.02)' },
+    layerToggleActive: { backgroundColor: 'rgba(59,130,246,0.1)' },
+    layerToggleText: { fontSize: 13, fontWeight: '600' },
+    badge: { backgroundColor: '#FF4C4C', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1, marginLeft: 4 },
+    badgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
     graphArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     legend: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, paddingVertical: 10, gap: 12, borderTopWidth: 1 },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
