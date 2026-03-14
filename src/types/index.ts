@@ -1,4 +1,4 @@
-// IoT Sentinel Mobile — Shared Types
+// Sentinel Mobile — Shared Types
 // Matches web app mockData.ts types exactly
 
 export type RiskLevel = 'trusted' | 'low' | 'medium' | 'high' | 'critical';

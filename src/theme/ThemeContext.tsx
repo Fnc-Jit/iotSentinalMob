@@ -19,7 +19,7 @@ const ThemeContext = createContext<ThemeContextType>({
     setThemeMode: () => { },
 });
 
-const STORAGE_KEY = 'iot-sentinel-theme';
+const STORAGE_KEY = 'sentinel-theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const systemColorScheme = useColorScheme();

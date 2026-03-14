@@ -10,7 +10,7 @@ type Props = {
 };
 
 export default function LoginScreen({ navigation }: Props) {
-    const [email, setEmail] = useState('analyst@iot-sentinel.io');
+    const [email, setEmail] = useState('analyst@sentinel.io');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -43,7 +43,7 @@ export default function LoginScreen({ navigation }: Props) {
                         <Shield size={28} color="#FFFFFF" />
                     </LinearGradient>
                     <Text style={styles.logoText}>iot<Text style={styles.logoTextLight}>sentinel</Text></Text>
-                    <Text style={styles.subtitle}>Enterprise IoT Security Platform</Text>
+                    <Text style={styles.subtitle}>Enterprise Security Platform</Text>
                 </View>
 
                 {/* Card */}
@@ -61,7 +61,7 @@ export default function LoginScreen({ navigation }: Props) {
                         style={styles.input}
                         value={email}
                         onChangeText={setEmail}
-                        placeholder="analyst@iot-sentinel.io"
+                        placeholder="analyst@sentinel.io"
                         placeholderTextColor="#555"
                         keyboardType="email-address"
                         autoCapitalize="none"
@@ -95,7 +95,7 @@ export default function LoginScreen({ navigation }: Props) {
                     </TouchableOpacity>
                 </View>
 
-                <Text style={styles.footerText}>© 2026 IoT Sentinel Security Platform</Text>
+                <Text style={styles.footerText}>© 2026 Sentinel Security Platform</Text>
             </KeyboardAvoidingView>
         </View>
     );

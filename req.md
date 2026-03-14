@@ -1,4 +1,4 @@
-# IoT Sentinel Mobile — API Requirements
+# Sentinel Mobile — API Requirements
 
 All endpoints that must be connected to the backend for full functionality.
 Currently using mock data from `src/data/mockData.ts`.

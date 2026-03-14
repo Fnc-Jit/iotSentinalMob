@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "IoTSentinelMobile",
-    "slug": "IoTSentinelMobile",
+    "name": "SentinelMobile",
+    "slug": "SentinelMobile",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
@@ -18,7 +18,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.fncjit.iotsentinel",
+      "package": "com.fncjit.sentinel",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",

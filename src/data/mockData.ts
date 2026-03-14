@@ -1,4 +1,4 @@
-// IoT Sentinel Mobile — Mock Data
+// Sentinel Mobile — Mock Data
 // Ported from web app /src/app/data/mockData.ts
 // This file will be replaced by API calls when backend is connected
 

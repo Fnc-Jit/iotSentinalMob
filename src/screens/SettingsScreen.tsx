@@ -248,7 +248,7 @@ export default function SettingsScreen() {
                 </View>
 
                 <View style={[styles.aboutCard, { backgroundColor: 'rgba(255,255,255,0.02)', borderColor: colors.border }]}>
-                    <Text style={[styles.aboutTitle, { color: colors.text }]}>IoT Sentinel Mobile</Text>
+                    <Text style={[styles.aboutTitle, { color: colors.text }]}>Sentinel Mobile</Text>
                     <Text style={[styles.aboutText, { color: colors.muted }]}>Created by <Text style={{ color: colors.text, fontWeight: '700' }}>JITRAJ</Text> and <Text style={{ color: colors.text, fontWeight: '700' }}>TEAM ARCH ECHO</Text></Text>
 
                     <TouchableOpacity
@@ -262,8 +262,8 @@ export default function SettingsScreen() {
             </View>
 
             {/* Version info */}
-            <Text style={[styles.versionText, { color: colors.muted }]}>IoT Sentinel Mobile v1.0.0</Text>
-            <Text style={[styles.versionText, { color: colors.muted, marginTop: 4 }]}>© 2026 IoT Sentinel Security Platform</Text>
+            <Text style={[styles.versionText, { color: colors.muted }]}>Sentinel Mobile v1.0.0</Text>
+            <Text style={[styles.versionText, { color: colors.muted, marginTop: 4 }]}>© 2026 Sentinel Security Platform</Text>
         </ScrollView>
     );
 }

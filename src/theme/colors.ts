@@ -1,4 +1,4 @@
-// IoT Sentinel Mobile — Color System
+// Sentinel Mobile — Color System
 // Matches web dashboard CSS variables exactly
 
 export const brandColors = {
