@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SentinelMobile",
-    "slug": "SentinelMobile",
+    "slug": "IoTSentinelMobile",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
